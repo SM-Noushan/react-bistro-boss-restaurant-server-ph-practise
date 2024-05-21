@@ -39,6 +39,18 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     console.log("Successfully connected to MongoDB!");
+
+    // Connect to the "bistroBossRestaurant" database
+    const bbr = client.db("bistroBossRestaurant");
+    const menuCollection = bbr.collection("menuCollection");
+
+    // menu apis
+    // get all data
+    app.get("/menu", async (req, res) => {
+      const cursor = menuCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
