@@ -47,7 +47,10 @@ async function run() {
     // menu apis
     // get all data
     app.get("/menu", async (req, res) => {
-      const cursor = menuCollection.find();
+      const category = req.query.category;
+      const query = { category: { $regex: category, $options: "i" } };
+      //   console.log(query);
+      const cursor = menuCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
