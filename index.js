@@ -43,6 +43,7 @@ async function run() {
     // Connect to the "bistroBossRestaurant" database
     const bbr = client.db("bistroBossRestaurant");
     const menuCollection = bbr.collection("menuCollection");
+    const cartCollection = bbr.collection("cartCollection");
 
     // menu apis
     // get all data
@@ -52,6 +53,14 @@ async function run() {
       //   console.log(query);
       const cursor = menuCollection.find(query);
       const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // cart apis
+    // save cart data
+    app.post("/carts", async (req, res) => {
+      const item = req.body;
+      const result = await cartCollection.insertOne(item);
       res.send(result);
     });
   } finally {
