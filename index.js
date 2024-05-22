@@ -57,7 +57,17 @@ async function run() {
     });
 
     // cart apis
-    // save/update cart data
+    //get total number of cart items
+    app.get("/carts/total", async (req, res) => {
+      const filter = { userID: req?.query?.userUID };
+      //   if (!req?.query?.userUID) {
+      //     res.send({ message: "No User ID" });
+      //   } else {
+      const count = await cartCollection.countDocuments(filter);
+      res.send({ count });
+      //   }
+    });
+    // save or update cart data
     app.post("/carts", async (req, res) => {
       const query = req.body;
       const update = { $inc: { quantity: 1 } };
