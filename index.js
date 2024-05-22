@@ -57,10 +57,12 @@ async function run() {
     });
 
     // cart apis
-    // save cart data
+    // save/update cart data
     app.post("/carts", async (req, res) => {
-      const item = req.body;
-      const result = await cartCollection.insertOne(item);
+      const query = req.body;
+      const update = { $inc: { quantity: 1 } };
+      const options = { upsert: true };
+      const result = await cartCollection.updateOne(query, update, options);
       res.send(result);
     });
   } finally {
