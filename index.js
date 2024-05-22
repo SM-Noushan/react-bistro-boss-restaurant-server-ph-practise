@@ -57,6 +57,49 @@ async function run() {
     });
 
     // cart apis
+    //get cart items
+    app.get("/carts", async (req, res) => {
+      const userID = req?.query?.userId;
+      const myCartItems = await cartCollection
+        .aggregate([
+          { $match: { userID } },
+          {
+            $lookup: {
+              from: "menuCollection",
+              let: { menuIdObj: { $toObjectId: "$menuID" } },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: { $eq: ["$_id", "$$menuIdObj"] },
+                  },
+                },
+                {
+                  $project: {
+                    _id: 0,
+                    name: 1,
+                    image: 1,
+                    price: 1,
+                  },
+                },
+              ],
+              as: "details",
+            },
+          },
+          {
+            $unwind: "$details",
+          },
+          {
+            $project: {
+              _id: 1,
+              quantity: 1,
+              details: 1,
+            },
+          },
+        ])
+        .toArray();
+      res.send(myCartItems);
+    });
+
     //get total number of cart items
     app.get("/carts/total", async (req, res) => {
       const filter = { userID: req?.query?.userUID };
@@ -67,6 +110,7 @@ async function run() {
       res.send({ count });
       //   }
     });
+
     // save or update cart data
     app.post("/carts", async (req, res) => {
       const query = req.body;
