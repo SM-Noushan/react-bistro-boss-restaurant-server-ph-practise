@@ -119,6 +119,14 @@ async function run() {
       const result = await cartCollection.updateOne(query, update, options);
       res.send(result);
     });
+
+    // remove cart item
+    app.delete("/cart/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
