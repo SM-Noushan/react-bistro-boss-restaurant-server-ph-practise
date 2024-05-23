@@ -46,6 +46,18 @@ async function run() {
     const menuCollection = bbr.collection("menuCollection");
     const cartCollection = bbr.collection("cartCollection");
 
+    // middleware
+    const verifyToken = (req, res, next) => {
+      if (!req.headers.authorization)
+        return res.status(401).send({ message: "Forbidden Access" });
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.Access_Token_Secret, (err, decoded) => {
+        if (err) return res.status(401).send({ message: "Forbidden Access" });
+        req.decoded = decoded;
+        next();
+      });
+    };
+
     // jwt related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -57,7 +69,8 @@ async function run() {
 
     //users api
     //get all user
-    app.get("/admin/users", async (req, res) => {
+    app.get("/admin/users", verifyToken, async (req, res) => {
+      console.log(req.decoded.uid);
       const result = await userCollection.find().toArray();
       res.send(result);
     });
