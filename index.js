@@ -47,6 +47,11 @@ async function run() {
     const cartCollection = bbr.collection("cartCollection");
 
     //users api
+    //set all user
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
     //store user data
     app.post("/user", async (req, res) => {
       const user = req.body;
