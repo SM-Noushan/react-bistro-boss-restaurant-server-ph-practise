@@ -46,6 +46,15 @@ async function run() {
     const menuCollection = bbr.collection("menuCollection");
     const cartCollection = bbr.collection("cartCollection");
 
+    // jwt related api
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.Access_Token_Secret, {
+        expiresIn: "1h",
+      });
+      res.send({ token });
+    });
+
     //users api
     //get all user
     app.get("/admin/users", async (req, res) => {
