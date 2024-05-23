@@ -68,9 +68,21 @@ async function run() {
     });
 
     //users api
+    //verify admin
+    app.get("/admin/verify/:uid", verifyToken, async (req, res) => {
+      const uid = req.params.uid;
+      if (uid !== req.decoded.uid)
+        return res.status(403).send({ message: "Unauthorized Access" });
+      let role = false;
+      const query = { uid: uid };
+      const options = { projection: { _id: 0, role: 1 } };
+      const result = await userCollection.findOne(query, options);
+      if (result?.role === "admin") role = true;
+      res.send({ role });
+    });
+
     //get all user
     app.get("/admin/users", verifyToken, async (req, res) => {
-      console.log(req.decoded.uid);
       const result = await userCollection.find().toArray();
       res.send(result);
     });
