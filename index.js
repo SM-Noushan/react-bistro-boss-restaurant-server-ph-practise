@@ -47,8 +47,8 @@ async function run() {
     const cartCollection = bbr.collection("cartCollection");
 
     //users api
-    //set all user
-    app.get("/users", async (req, res) => {
+    //get all user
+    app.get("/admin/users", async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
@@ -61,6 +61,17 @@ async function run() {
         { $setOnInsert: user }, //only store user if storing new user
         { upsert: true } //insert if document does not exist
       );
+      res.send(result);
+    });
+
+    // update user role
+    app.patch("/admin/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: { role: "admin" },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
 
