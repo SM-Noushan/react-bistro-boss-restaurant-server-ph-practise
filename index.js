@@ -42,8 +42,17 @@ async function run() {
 
     // Connect to the "bistroBossRestaurant" database
     const bbr = client.db("bistroBossRestaurant");
+    const userCollection = bbr.collection("userCollection");
     const menuCollection = bbr.collection("menuCollection");
     const cartCollection = bbr.collection("cartCollection");
+
+    //users api
+    //store user data
+    app.post("/user", async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
 
     // menu apis
     // get all data
