@@ -50,7 +50,11 @@ async function run() {
     //store user data
     app.post("/user", async (req, res) => {
       const user = req.body;
-      const result = await userCollection.insertOne(user);
+      const result = await userCollection.updateOne(
+        { uid: user.uid }, //filter by uid
+        { $setOnInsert: user }, //only store user if storing new user
+        { upsert: true } //insert if document does not exist
+      );
       res.send(result);
     });
 
