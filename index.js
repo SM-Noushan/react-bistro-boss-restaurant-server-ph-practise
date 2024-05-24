@@ -134,8 +134,9 @@ async function run() {
     // menu apis
     // get all data
     app.get("/menu", async (req, res) => {
-      const category = req.query.category;
-      const query = { category: { $regex: category, $options: "i" } };
+      const category = req?.query?.category;
+      let query = {};
+      if (category) query = { category: { $regex: category, $options: "i" } };
       //   console.log(query);
       const cursor = menuCollection.find(query);
       const result = await cursor.toArray();
