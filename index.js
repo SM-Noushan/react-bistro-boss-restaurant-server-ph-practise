@@ -143,10 +143,30 @@ async function run() {
       res.send(result);
     });
 
+    // get one menu item
+    app.get("/menu/:id", async (req, res) => {
+      const id = req?.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menuCollection.findOne(query);
+      res.send(result);
+    });
+
     // store menu item
     app.post("/menu", verifyToken, verifyAdmin, async (req, res) => {
       const data = req.body;
       const result = await menuCollection.insertOne(data);
+      res.send(result);
+    });
+
+    // update menu item
+    app.put("/menu/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedData = req.body;
+      const updateQuery = {
+        $set: updatedData,
+      };
+      const result = await menuCollection.updateOne(filter, updateQuery);
       res.send(result);
     });
 
