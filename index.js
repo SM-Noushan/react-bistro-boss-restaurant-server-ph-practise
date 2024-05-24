@@ -142,6 +142,13 @@ async function run() {
       res.send(result);
     });
 
+    // store menu item
+    app.post("/menu", verifyToken, verifyAdmin, async (req, res) => {
+      const data = req.body;
+      const result = await menuCollection.insertOne(data);
+      res.send(result);
+    });
+
     // cart apis
     //get cart items
     app.get("/carts", async (req, res) => {
