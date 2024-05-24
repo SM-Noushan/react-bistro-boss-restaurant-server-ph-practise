@@ -47,15 +47,29 @@ async function run() {
     const cartCollection = bbr.collection("cartCollection");
 
     // middleware
+    // verify token
     const verifyToken = (req, res, next) => {
       if (!req.headers.authorization)
-        return res.status(401).send({ message: "Forbidden Access" });
+        return res.status(401).send({ message: "Unauthorized Access" });
       const token = req.headers.authorization.split(" ")[1];
       jwt.verify(token, process.env.Access_Token_Secret, (err, decoded) => {
-        if (err) return res.status(401).send({ message: "Forbidden Access" });
+        if (err)
+          return res.status(401).send({ message: "Unauthorized Access" });
         req.decoded = decoded;
         next();
       });
+    };
+
+    // verify admin after verify token
+    const verifyAdmin = async (req, res, next) => {
+      const uid = req.decoded.uid;
+      let isAdmin = false;
+      const query = { uid: uid };
+      const result = await userCollection.findOne(query);
+      if (result?.role === "admin") isAdmin = true;
+      if (!isAdmin)
+        return res.status(403).send({ message: "Forbidden Access" });
+      next();
     };
 
     // jwt related api
@@ -72,7 +86,7 @@ async function run() {
     app.get("/admin/verify/:uid", verifyToken, async (req, res) => {
       const uid = req.params.uid;
       if (uid !== req.decoded.uid)
-        return res.status(403).send({ message: "Unauthorized Access" });
+        return res.status(403).send({ message: "Forbidden Access" });
       let role = false;
       const query = { uid: uid };
       const options = { projection: { _id: 0, role: 1 } };
@@ -82,7 +96,7 @@ async function run() {
     });
 
     //get all user
-    app.get("/admin/users", verifyToken, async (req, res) => {
+    app.get("/admin/users", verifyToken, verifyAdmin, async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
@@ -99,7 +113,7 @@ async function run() {
     });
 
     // update user role
-    app.patch("/admin/user/:id", async (req, res) => {
+    app.patch("/admin/user/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -110,7 +124,7 @@ async function run() {
     });
 
     // remove user
-    app.delete("/user/:id", async (req, res) => {
+    app.delete("/user/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
