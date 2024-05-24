@@ -150,6 +150,14 @@ async function run() {
       res.send(result);
     });
 
+    // delete menu item
+    app.delete("/menu/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menuCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // cart apis
     //get cart items
     app.get("/carts", async (req, res) => {
@@ -215,7 +223,9 @@ async function run() {
     });
 
     // remove cart item
-    app.delete("/cart/:id", async (req, res) => {
+    app.delete("/cart/:id", verifyToken, async (req, res) => {
+      if (req.query.uid !== req.decoded.uid)
+        return res.status(403).send({ message: "Forbidden Access" });
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
