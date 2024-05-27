@@ -273,6 +273,18 @@ async function run() {
     });
 
     // payment related api
+    // get payment details
+    app.get("/payments", verifyToken, async (req, res) => {
+      const uid = req?.query?.uid;
+      if (uid !== req.decoded.uid)
+        return res.status(403).send({ message: "Forbidden Access" });
+      const query = { uid };
+      const options = {
+        sort: { _id: -1 },
+      };
+      const result = await paymentCollection.find(query, options).toArray();
+      res.send(result);
+    });
     // store payment details
     app.post("/payments", async (req, res) => {
       const payment = req.body;
