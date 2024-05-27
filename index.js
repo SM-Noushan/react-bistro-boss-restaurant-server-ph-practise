@@ -1,9 +1,10 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
-const express = require("express");
-const cors = require("cors");
 require("dotenv").config();
+const cors = require("cors");
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -45,6 +46,7 @@ async function run() {
     const userCollection = bbr.collection("userCollection");
     const menuCollection = bbr.collection("menuCollection");
     const cartCollection = bbr.collection("cartCollection");
+    const paymentCollection = bbr.collection("paymentCollection");
 
     // middleware
     // verify token
@@ -159,7 +161,7 @@ async function run() {
     });
 
     // update menu item
-    app.put("/menu/:id", verifyToken, verifyAdmin, async (req, res) => {
+    app.patch("/menu/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedData = req.body;
@@ -250,6 +252,37 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
       res.send(result);
+    });
+
+    // payment intent
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+
+      // console.log(amount);
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // payment related api
+    // store payment details
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      // delete cart items
+      const query = {
+        _id: { $in: payment.cartIds.map((cartId) => new ObjectId(cartId)) },
+      };
+      await cartCollection.deleteMany(query);
+      const paymentResult = await paymentCollection.insertOne(payment);
+      res.send(paymentResult);
     });
   } finally {
     // Ensures that the client will close when you finish/error
