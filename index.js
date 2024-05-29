@@ -214,9 +214,7 @@ async function run() {
           },
           {
             $project: {
-              _id: 1,
-              quantity: 1,
-              details: 1,
+              userID: 0,
             },
           },
         ])
@@ -285,6 +283,7 @@ async function run() {
       const result = await paymentCollection.find(query, options).toArray();
       res.send(result);
     });
+
     // store payment details
     app.post("/payments", async (req, res) => {
       const payment = req.body;
@@ -296,6 +295,90 @@ async function run() {
       const paymentResult = await paymentCollection.insertOne(payment);
       res.send(paymentResult);
     });
+
+    // stats-analytics related api
+    // get stats: users, menu-items, orders and revenue
+    app.get("/admin/stats", verifyToken, verifyAdmin, async (req, res) => {
+      const customers = await userCollection.estimatedDocumentCount();
+      const products = await menuCollection.estimatedDocumentCount();
+      const orders = await paymentCollection.estimatedDocumentCount();
+      const getRevenue = await paymentCollection
+        .aggregate([
+          {
+            $addFields: {
+              parsePrice: { $toDouble: "$price" },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalRevenue: { $sum: "$parsePrice" },
+            },
+          },
+        ])
+        .toArray();
+      const revenue = getRevenue.length > 0 ? getRevenue[0].totalRevenue : 0;
+      res.send({ revenue, customers, products, orders });
+    });
+    // get order stats
+    app.get(
+      "/admin/order-stats",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const result = await paymentCollection
+          .aggregate([
+            {
+              $addFields: {
+                menuItemIds_menuQuantity: {
+                  $zip: { inputs: ["$menuItemIds", "$menuQuantity"] },
+                },
+              },
+            },
+            { $unwind: "$menuItemIds_menuQuantity" },
+            {
+              $addFields: {
+                menuItemId: { $arrayElemAt: ["$menuItemIds_menuQuantity", 0] },
+                quantity: { $arrayElemAt: ["$menuItemIds_menuQuantity", 1] },
+                menuItemObjId: { $toObjectId: "$menuItemId" },
+              },
+            },
+            {
+              $addFields: {
+                menuItemObjId: { $toObjectId: "$menuItemId" },
+              },
+            },
+            {
+              $lookup: {
+                from: "menuCollection",
+                localField: "menuItemObjId",
+                foreignField: "_id",
+                as: "menuDetails",
+              },
+            },
+            { $unwind: "$menuDetails" },
+            {
+              $group: {
+                _id: "$menuDetails.category",
+                quantity: { $sum: "$quantity" },
+                price: {
+                  $sum: { $multiply: ["$quantity", "$menuDetails.price"] },
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                category: "$_id",
+                quantity: 1,
+                revenue: "$price",
+              },
+            },
+          ])
+          .toArray();
+        res.send(result);
+      }
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
